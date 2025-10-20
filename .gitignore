@@ -7,4 +7,6 @@
 **/*.exe
 
 tests/
+in/
+out/
 **/tests/
