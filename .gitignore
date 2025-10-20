@@ -1,0 +1,10 @@
+.vscode/
+
+!.vscode/settings.json
+!.vscode/extensions.json
+
+*.exe
+**/*.exe
+
+tests/
+**/tests/
