@@ -8,6 +8,14 @@
 
 namespace fs = std::filesystem;
 
+// ANSI color codes for Windows console
+#define COLOR_RESET   "\033[0m"
+#define COLOR_RED     "\033[31m"
+#define COLOR_GREEN   "\033[32m"
+#define COLOR_YELLOW  "\033[33m"
+#define COLOR_BLUE    "\033[34m"
+#define COLOR_CYAN    "\033[36m"
+
 struct TestResult {
     std::string testName;
     bool passed;
@@ -77,7 +85,7 @@ bool compareOutput(const std::string& expected, const std::string& actual, bool 
             std::cout << "  First line comparison:\n";
             std::cout << "  Expected: '" << expectedFirstLine << "'\n";
             std::cout << "  Actual:   '" << actualFirstLine << "'\n";
-            std::cout << "  Match: " << (expectedFirstLine == actualFirstLine ? "YES" : "NO") << "\n";
+            std::cout << "  Match: " << (expectedFirstLine == actualFirstLine ? COLOR_GREEN "YES" COLOR_RESET : COLOR_RED "NO" COLOR_RESET) << "\n";
         }
         
         return expectedFirstLine == actualFirstLine;
@@ -91,24 +99,24 @@ std::vector<TestResult> runTests(const std::string& testProgram,
                                 const std::string& inputDir, 
                                 const std::string& outputDir,
                                 bool compareFirstLineOnly,
-                                bool showAll) {  // Add showAll parameter
+                                bool showAll) {
     std::vector<TestResult> results;
     
     // Check if the test program exists
     if (!fs::exists(testProgram)) {
-        std::cerr << "Error: Test program '" << testProgram << "' does not exist!\n";
+        std::cerr << COLOR_RED << "Error: Test program '" << testProgram << "' does not exist!" << COLOR_RESET << "\n";
         return results;
     }
     
     // Check if the input directory exists
     if (!fs::exists(inputDir) || !fs::is_directory(inputDir)) {
-        std::cerr << "Error: Input directory '" << inputDir << "' does not exist!\n";
+        std::cerr << COLOR_RED << "Error: Input directory '" << inputDir << "' does not exist!" << COLOR_RESET << "\n";
         return results;
     }
     
     // Check if the output directory exists
     if (!fs::exists(outputDir) || !fs::is_directory(outputDir)) {
-        std::cerr << "Error: Output directory '" << outputDir << "' does not exist!\n";
+        std::cerr << COLOR_RED << "Error: Output directory '" << outputDir << "' does not exist!" << COLOR_RESET << "\n";
         return results;
     }
     
@@ -121,13 +129,13 @@ std::vector<TestResult> runTests(const std::string& testProgram,
             
             // Check if the corresponding .out file exists
             if (!fs::exists(outputFile)) {
-                std::cout << testName << " - no matching .out file\n";
+                std::cout << COLOR_YELLOW << testName << " - no matching .out file" << COLOR_RESET << "\n";
                 continue;
             }
             
             // Show debug information only if -show-all flag is present
             if (showAll) {
-                std::cout << "=== All input and output info: " << testName << " ===\n";
+                std::cout << COLOR_CYAN << "=== All input and output info: " << testName << " ===" << COLOR_RESET << "\n";
                 std::string inputContent = readFile(inputFile);
                 std::cout << "Input content:\n" << inputContent << "\n";
             }
@@ -152,11 +160,16 @@ std::vector<TestResult> runTests(const std::string& testProgram,
             // Compare the results with the specified mode
             bool passed = compareOutput(expectedOutput, actualOutput, compareFirstLineOnly, showAll);
             
-            std::cout << testName << " - " << (passed ? "true" : "false") << "\n";
+            // Color-coded result
+            if (passed) {
+                std::cout << testName << " - " << COLOR_GREEN << "true" << COLOR_RESET << "\n";
+            } else {
+                std::cout << testName << " - " << COLOR_RED << "false" << COLOR_RESET << "\n";
+            }
             
             // Close debug section if -show-all flag is present
             if (showAll) {
-                std::cout << "========================\n\n";
+                std::cout << COLOR_CYAN << "========================" << COLOR_RESET << "\n\n";
             }
             
             results.push_back({testName, passed, expectedOutput, actualOutput});
@@ -174,25 +187,42 @@ void printSummary(const std::vector<TestResult>& results, bool compareFirstLineO
         }
     }
     
-    std::cout << "\n=== SUMMARY ===\n";
-    std::cout << "Tests passed: " << passedCount << "\n";
-    std::cout << "Tests failed: " << results.size() - passedCount << "\n";
+    std::cout << "\n" << COLOR_BLUE << "=== SUMMARY ===" << COLOR_RESET << "\n";
+    
+    // Color-coded summary lines
+    std::cout << "Tests passed: " << COLOR_GREEN << passedCount << COLOR_RESET << "\n";
+    std::cout << "Tests failed: " << COLOR_RED << (results.size() - passedCount) << COLOR_RESET << "\n";
     std::cout << "Total tests: " << results.size() << "\n";
     
     // Display comparison mode information
     if (compareFirstLineOnly) {
-        std::cout << "Comparison mode: First line only\n";
+        std::cout << "Comparison mode: " << COLOR_YELLOW << "First line only" << COLOR_RESET << "\n";
     } else {
-        std::cout << "Comparison mode: Full output\n";
+        std::cout << "Comparison mode: " << COLOR_YELLOW << "Full output" << COLOR_RESET << "\n";
     }
     
     // Display debug mode information if -show-all was used
     if (showAll) {
-        std::cout << "Debug mode: Detailed output shown\n";
+        std::cout << COLOR_YELLOW << "Detailed output shown" << COLOR_RESET << "\n";
     }
 }
 
+// Function to enable ANSI escape codes on Windows
+void enableANSI() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+    
+    DWORD dwMode = 0;
+    if (!GetConsoleMode(hOut, &dwMode)) return;
+    
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+}
+
 int main(int argc, char* argv[]) {
+    // Enable ANSI escape codes for colors on Windows
+    enableANSI();
+    
     bool compareFirstLineOnly = false;
     bool showAll = false;
     std::string testProgram, inputDir, outputDir;
