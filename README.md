@@ -20,8 +20,8 @@ g++ c++ compiler
 
 `tester.exe program.exe in out` - to test entire output
 
-Available flags
-`-one` - compares with only the first line from .out file <br>
+Available flags<br>
+`-one` - compares with only the first line from .out file<br>
 `-show-all` - shows whole input, outout and expected output<br>
 
 - program.exe - tested program<br>
